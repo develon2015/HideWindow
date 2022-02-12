@@ -3,6 +3,25 @@
 #include <CommCtrl.h>
 
 static HMENU mainmenu;
+static HHOOK hhook;
+
+LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	KBDLLHOOKSTRUCT *p = (KBDLLHOOKSTRUCT *)lParam;
+	// Do the wParam and lParam parameters contain information about a keyboard message.
+	if (nCode == HC_ACTION)
+	{
+		// Messsage data is ready for pickup
+		if (wParam == WM_SYSKEYDOWN || wParam == WM_KEYDOWN)
+		{
+            if (p->vkCode == VK_LWIN) {
+                return TRUE;
+            }
+		}
+	}
+	// hook procedure must pass the message *Always*
+	return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
 
 LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
@@ -28,6 +47,28 @@ LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _
         case 200:
         {
             enum_window();
+            break;
+        }
+        case 201:
+        {
+            MENUITEMINFO info = {0};
+            info.cbSize = sizeof(MENUITEMINFO);
+            info.fMask = MIIM_STATE;
+            GetMenuItemInfo(mainmenu, 201, FALSE, &info);
+            if (info.fState == MFS_CHECKED) {
+                UnhookWindowsHookEx(hhook);
+                info.fState = MFS_UNCHECKED;
+                SetMenuItemInfo(mainmenu, 201, FALSE, &info);
+            } else {
+                hhook = SetWindowsHookExW(
+                    WH_KEYBOARD_LL,        // low-level keyboard input events
+                    HookProcedure,         // pointer to the hook procedure
+                    GetModuleHandle(NULL), // A handle to the DLL containing the hook procedure
+                    NULL                   // desktop apps, if this parameter is zero
+                );
+                info.fState = MFS_CHECKED;
+                SetMenuItemInfo(mainmenu, 201, FALSE, &info);
+            }
             break;
         }
         case 101:
@@ -89,6 +130,7 @@ LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _
             {
                 mainmenu = CreatePopupMenu();
                 AppendMenuW(mainmenu, MF_STRING, 200, L"主程序");
+                AppendMenuW(mainmenu, MF_STRING, 201, L"屏蔽win键");
                 AppendMenuW(mainmenu, MF_SEPARATOR, (UINT)0, NULL);
 
                 HMENU submenu = CreatePopupMenu();
