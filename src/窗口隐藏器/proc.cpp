@@ -71,6 +71,11 @@ LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _
             }
             break;
         }
+        case 202: {
+            extern void close_screen();
+            close_screen();
+            break;
+        }
         case 101:
         {
             system("start https://github.com/develon2015/HideWindow");
@@ -131,6 +136,7 @@ LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _
                 mainmenu = CreatePopupMenu();
                 AppendMenuW(mainmenu, MF_STRING, 200, L"主程序");
                 AppendMenuW(mainmenu, MF_STRING, 201, L"屏蔽win键");
+                AppendMenuW(mainmenu, MF_STRING, 202, L"灭霸");
                 AppendMenuW(mainmenu, MF_SEPARATOR, (UINT)0, NULL);
 
                 HMENU submenu = CreatePopupMenu();
