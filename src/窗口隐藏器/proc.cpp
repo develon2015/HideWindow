@@ -78,7 +78,8 @@ LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _
         }
         case 101:
         {
-            system("start https://github.com/develon2015/HideWindow");
+            // system("start https://github.com/develon2015/HideWindow");
+            WinExec("explorer https://github.com/develon2015/HideWindow", SW_HIDE);
             break;
         }
         case 102:

@@ -7,7 +7,7 @@
 			"command": "cmd",
 			"args": [
 				"/c",
-				"cmake --build build && build\\src\\窗口隐藏器\\Release\\hide.exe"
+				"cmake --build build && build\\src\\窗口隐藏器\\Debug\\hide.exe"
 			],
 			"echoCommand": true,
 			"group": {
