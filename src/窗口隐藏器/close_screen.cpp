@@ -74,7 +74,7 @@ static LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wP
     return DefWindowProcW(hWnd, Msg, wParam, lParam);
 }
 
-HWND registe() {
+static HWND registe() {
     const wchar_t *cname = L"black_window";
     if (!hasRegisted) {
         WNDCLASSEXW wc = {0};
