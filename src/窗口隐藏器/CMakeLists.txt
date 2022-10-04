@@ -8,6 +8,7 @@ add_executable("${App}" ${files})
 target_include_directories("${App}" PUBLIC "${CMAKE_HOME_DIRECTORY}/src")
 target_link_libraries("${App}" comctl32)
 target_link_libraries("${App}" Win32Helper)
+target_link_libraries("${App}" fw)
 
 #指定链接器语言
 set_target_properties("${App}" PROPERTIES LINKER_LANGUAGE CXX)

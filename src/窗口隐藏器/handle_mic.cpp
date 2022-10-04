@@ -62,7 +62,7 @@ static LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-static void setMsg(LPSTR msg) {
+static void setMsg(LPCWSTR msg) {
     // MENUITEMINFO info = {0};
     // info.cbSize = sizeof info;
     // info.fMask = MIIM_STRING;
@@ -72,27 +72,30 @@ static void setMsg(LPSTR msg) {
     // info.dwTypeData = (LPSTR)malloc(info.cch); // 获取菜单项内容需要自行分配内存
     // GetMenuItemInfo(mainmenu, item, FALSE, &info);
     // printf("item content -> %s.\n", info.dwTypeData);
-    MENUITEMINFO info = {0};
+    MENUITEMINFOW info = {0};
     info.cbSize = sizeof info;
     info.fMask = MIIM_STRING;
-    char buf[1024] = { 0 };
+    WCHAR buf[1024] = { 0 };
     if (msg) {
-        sprintf(buf, "麦克风（%s）", msg);
-        printf("麦克风（%s）\n", msg);
+        // 这里，为什么wsprintfW不支持%Ts，只能小写为%ts
+        wsprintfW(buf, L"麦克风（%ts）", msg);
+        toast(buf);
     } else {
-        sprintf(buf, "麦克风");
+        wsprintfW(buf, L"麦克风");
     }
     info.dwTypeData = buf;
-    SetMenuItemInfo(mainmenu, item, FALSE, &info);
+    SetMenuItemInfoW(mainmenu, item, FALSE, &info);
 }
 
 static void updateMicStatus(PAUDIO_VOLUME_NOTIFICATION_DATA pNotify)
 {
     if (pNotify->bMuted) {
-        return setMsg("已静音");
+        return setMsg(L"已静音");
     }
-    char buf[24] = { 0 };
-    sprintf(buf, "音量: %.0lf", pNotify->fMasterVolume * 100);
+    WCHAR buf[24] = { 0 };
+    char buf_float[24] = { 0 };
+    sprintf(buf_float, "%.0f", pNotify->fMasterVolume * 100);
+    wsprintfW(buf, L"音量: %hs", buf_float);
     setMsg(buf);
 }
 
@@ -101,12 +104,15 @@ static void updateMicStatusByIAudioEndpointVolume(IAudioEndpointVolume *micropho
     BOOL muted = FALSE;
     microphone->GetMute(&muted);
     if (muted) {
-        return setMsg("已静音");
+        return setMsg(L"已静音");
     }
-    char buf[24] = { 0 };
+    WCHAR buf[24] = { 0 };
     float volume = 0;
     microphone->GetMasterVolumeLevelScalar(&volume);
-    sprintf(buf, "音量: %.0lf", volume * 100);
+    // wsprintf 不支持浮点数格式
+    char buf_float[24] = { 0 };
+    sprintf(buf_float, "%.0f", volume * 100);
+    wsprintfW(buf, L"音量: %hs", buf_float);
     setMsg(buf);
 }
 
@@ -213,6 +219,7 @@ static void check() {
     else
     {
         install();
+        init_float_window();
         info.fState = MFS_CHECKED;
         SetMenuItemInfo(mainmenu, item, FALSE, &info);
     }

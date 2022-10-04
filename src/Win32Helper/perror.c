@@ -24,7 +24,9 @@ long _Perror(char *op, const char *file, int line) {
         printf(RED TAG "%s: ERROR(%d)\n" RESET, file, line, op, code);
         return -1;
     }
-    printf(RED TAG "%s: %ls" RESET, file, line, op, bufMsg);
+    printf(RED TAG, file, line);
+    wprintf(L"%hs: %Ts", op, bufMsg);
+    printf(RESET);
 
     LocalFree(bufMsg);
     SetLastError(0);

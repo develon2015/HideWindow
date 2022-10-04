@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <Windows.h>
 #include "Win32Helper/include.h"
+#include "FloatWindow/include.h"
 
 extern HWND hwnd;
 extern HWND text;
