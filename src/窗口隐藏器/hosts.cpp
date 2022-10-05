@@ -11,6 +11,10 @@ void handle_hosts()
     // Google update service API in CHN: update.googleapis.com
     const auto googleapi = R"(180.163.151.32 translate.googleapis.com)";
 
+    char cmd[64] = "explorer ";
+    strcat(cmd, path);
+    WinExec(cmd, SW_HIDE);
+
     init_float_window();
     string line;
     ifstream hosts(path);

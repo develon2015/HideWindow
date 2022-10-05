@@ -113,9 +113,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstanc
 	SYSCALL(
 		RegisterClass(&wc);
 	)
-	SYSCALL(
-		RegisterClass(&wc);
-	)
 
 	int scrWidth  = GetSystemMetrics(SM_CXSCREEN);
 	int scrHeight = GetSystemMetrics(SM_CYSCREEN);
