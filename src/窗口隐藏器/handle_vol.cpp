@@ -12,25 +12,7 @@ static IAudioEndpointVolume *microphone = NULL;
  * 1 麦克风
  * @see https://github.com/fcannizzaro/win-audio
  */
-IAudioEndpointVolume *getVolume(int mic)
-{
-    HRESULT hr;
-    IMMDeviceEnumerator *enumerator = NULL;
-    IAudioEndpointVolume *volume = NULL;
-    IMMDevice *defaultDevice = NULL;
-    CoInitialize(NULL);
-    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID *)&enumerator);
-    hr = enumerator->GetDefaultAudioEndpoint(mic ? eCapture : eRender, eConsole, &defaultDevice);
-    if (hr != 0)
-    {
-        return volume;
-    }
-    hr = defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (LPVOID *)&volume);
-    enumerator->Release();
-    defaultDevice->Release();
-    CoUninitialize();
-    return volume;
-}
+IAudioEndpointVolume *getVolume(int mic);
 
 static void switchMute() {
     BOOL muted = FALSE;
@@ -66,15 +48,15 @@ static LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 		if (wParam == WM_SYSKEYDOWN || wParam == WM_KEYDOWN)
 		// if (wParam == WM_SYSKEYUP || wParam == WM_KEYUP)
 		{
-            if (p->vkCode == 'T' && (p->flags & 0b00100000)) { // ALT+T快捷键静音
+            if (p->vkCode == 'M' && (p->flags & 0b00100000)) { // ALT+M快捷键静音
                 switchMute();
                 return TRUE;
             }
-            if (p->vkCode == VK_UP && (p->flags & 0b00100000)) { // ALT+UP调节音量
+            if (p->vkCode == VK_ADD && (p->flags & 0b00100000)) { // ALT +调节音量
                 setupVolume(1);
                 return TRUE;
             }
-            if (p->vkCode == VK_DOWN && (p->flags & 0b00100000)) { // ALT+DOWN调节音量
+            if (p->vkCode == VK_SUBTRACT && (p->flags & 0b00100000)) { // ALT -调节音量
                 setupVolume(-1);
                 return TRUE;
             }
@@ -85,6 +67,7 @@ static LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 }
 
 static void setMsg(LPCWSTR msg) {
+    // return;
     // MENUITEMINFO info = {0};
     // info.cbSize = sizeof info;
     // info.fMask = MIIM_STRING;
@@ -100,10 +83,10 @@ static void setMsg(LPCWSTR msg) {
     WCHAR buf[1024] = { 0 };
     if (msg) {
         // 这里，为什么wsprintfW不支持%Ts，只能小写为%ts
-        wsprintfW(buf, L"麦克风（%ts）", msg);
+        wsprintfW(buf, L"扬声器（%ts）", msg);
         toast(buf);
     } else {
-        wsprintfW(buf, L"麦克风");
+        wsprintfW(buf, L"扬声器");
     }
     info.dwTypeData = buf;
     SetMenuItemInfoW(mainmenu, item, FALSE, &info);
@@ -142,15 +125,15 @@ static void updateMicStatusByIAudioEndpointVolume(IAudioEndpointVolume *micropho
  * 音量监听
  * @see https://learn.microsoft.com/en-us/windows/win32/coreaudio/endpoint-volume-controls
  */
-class CAudioEndpointVolumeCallback : public IAudioEndpointVolumeCallback
+static class CAudioEndpointVolumeCallback_vol : public IAudioEndpointVolumeCallback
 {
     LONG _cRef;
 
 public:
-    CAudioEndpointVolumeCallback() : _cRef(1)
+    CAudioEndpointVolumeCallback_vol() : _cRef(1)
     {
     }
-    ~CAudioEndpointVolumeCallback()
+    ~CAudioEndpointVolumeCallback_vol()
     {
     }
     ULONG STDMETHODCALLTYPE AddRef()
@@ -205,12 +188,12 @@ static IAudioEndpointVolumeCallback *event = NULL;
 
 static void install()
 {
-    microphone = getVolume(1);
+    microphone = getVolume(0);
     if (!microphone) {
-        printf("microphone 无法访问\n");
+        printf("speaker 无法访问\n");
         return;
     }
-    event = new CAudioEndpointVolumeCallback();
+    event = new CAudioEndpointVolumeCallback_vol();
     microphone->RegisterControlChangeNotify(event);
     updateMicStatusByIAudioEndpointVolume(microphone);
     hhook = SetWindowsHookExW(
@@ -249,7 +232,7 @@ static void check() {
     return;
 }
 
-void handle_mic(HMENU _mainmenu, UINT _item) {
+void handle_vol(HMENU _mainmenu, UINT _item) {
     mainmenu = _mainmenu;
     item = _item;
     check();

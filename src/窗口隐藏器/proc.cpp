@@ -81,6 +81,16 @@ LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _
             handle_mic(mainmenu, 203);
             break;
         }
+        case 204: {
+            extern void handle_vol(HMENU, UINT);
+            handle_vol(mainmenu, 204);
+            break;
+        }
+        case 301: {
+            extern void handle_hosts();
+            handle_hosts();
+            break;
+        }
         case 101:
         {
             // system("start https://github.com/develon2015/HideWindow");
@@ -144,6 +154,8 @@ LRESULT CALLBACK WindowProc(_In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _
                 AppendMenuW(mainmenu, MF_STRING, 201, L"屏蔽win键");
                 AppendMenuW(mainmenu, MF_STRING, 202, L"灭霸");
                 AppendMenuW(mainmenu, MF_STRING, 203, L"麦克风");
+                AppendMenuW(mainmenu, MF_STRING, 204, L"扬声器");
+                AppendMenuW(mainmenu, MF_STRING, 301, L"谷歌翻译DNS");
                 AppendMenuW(mainmenu, MF_SEPARATOR, (UINT)0, NULL);
 
                 HMENU submenu = CreatePopupMenu();
