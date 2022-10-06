@@ -46,7 +46,8 @@ void createChildWindow(HWND parent) {
 		GB2312_CHARSET,    //字符集  
 		OUT_DEFAULT_PRECIS, //输出精度
 		CLIP_DEFAULT_PRECIS, //裁剪精度
-		NONANTIALIASED_QUALITY, //输出质量
+		// NONANTIALIASED_QUALITY, //输出质量: 无抗锯齿
+		CLEARTYPE_QUALITY, //输出质量: ClearType抗锯齿
 		DEFAULT_PITCH | FF_DONTCARE,
 		// L"微軟正黑體"    //字体名称  
 		L"楷体"    //字体名称  
@@ -65,7 +66,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		{
 			// we're about to draw the static
 			// set the text colour in (HDC)lParam
-			SetBkMode((HDC)wParam, TRANSPARENT);
+			// SetBkMode((HDC)wParam, TRANSPARENT);
+			SetBkColor((HDC)wParam, 0);
 			SetTextColor((HDC)wParam, COLOR);
 			// NOTE: per documentation as pointed out by selbie, GetSolidBrush would leak a GDI handle.
 			return (LRESULT)brush;
@@ -142,10 +144,13 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstanc
 	//SetWindowLong(mainWnd, GWL_EXSTYLE, GetWindowLong(mainWnd, GWL_EXSTYLE) | WS_EX_LAYERED);
 	// LWA_COLORKEY 0x00000001 使用crKey作为透明度颜色。
 	// 指定在组合分层窗口时要使用的透明度颜色键。窗口以这种颜色绘制的所有像素都将是透明的。
-	SetLayeredWindowAttributes(mainWnd, 0xffffff, (BYTE)-1, LWA_COLORKEY);
+	// SetLayeredWindowAttributes(mainWnd, 0xffffff, (BYTE)-1, LWA_COLORKEY);
 	// LWA_ALPHA 0x00000002 使用bAlpha确定分层窗口的不透明度。
 	// Alpha 值用于描述分层窗口的不透明度。当bAlpha为 0 时，窗口是完全透明的。当bAlpha为 255 时，窗口是不透明的。
 	// SetLayeredWindowAttributes(mainWnd, RGB(0, 0, 0), 50, LWA_ALPHA);
+
+	// 同时设置透明掩码颜色和窗口整体透明度
+	SetLayeredWindowAttributes(mainWnd, 0xffffff, 0xBF, LWA_COLORKEY | LWA_ALPHA);
 
 	ShowWindow(mainWnd, SW_SHOW);
 	UpdateWindow(mainWnd);
