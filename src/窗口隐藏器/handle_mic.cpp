@@ -1,6 +1,7 @@
 #include "include.h"
 #include <mmdeviceapi.h>
 #include <endpointvolume.h>
+#include <Functiondiscoverykeys_devpkey.h>
 
 static HMENU mainmenu = NULL;
 static UINT item = 0;
@@ -12,7 +13,7 @@ static IAudioEndpointVolume *microphone = NULL;
  * 1 麦克风
  * @see https://github.com/fcannizzaro/win-audio
  */
-IAudioEndpointVolume *getVolume(int mic)
+IAudioEndpointVolume *getVolume(int mic, WCHAR *device_name = NULL)
 {
     HRESULT hr;
     IMMDeviceEnumerator *enumerator = NULL;
@@ -25,6 +26,18 @@ IAudioEndpointVolume *getVolume(int mic)
     {
         return volume;
     }
+
+    // 获取设备属性
+    if (device_name) {
+        IPropertyStore* pPropStore = NULL;
+        hr = defaultDevice->OpenPropertyStore(STGM_READ, &pPropStore);
+        if (SUCCEEDED(hr)) {
+            PROPVARIANT varName;
+            pPropStore->GetValue(PKEY_Device_DeviceDesc, &varName);
+            wsprintfW(device_name, L"%s", varName.pwszVal);
+        }
+    }
+
     hr = defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (LPVOID *)&volume);
     enumerator->Release();
     defaultDevice->Release();

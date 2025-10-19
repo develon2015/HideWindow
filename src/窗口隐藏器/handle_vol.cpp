@@ -12,7 +12,13 @@ static IAudioEndpointVolume *microphone = NULL;
  * 1 麦克风
  * @see https://github.com/fcannizzaro/win-audio
  */
-IAudioEndpointVolume *getVolume(int mic);
+IAudioEndpointVolume *getVolume(int mic, WCHAR *device_name = NULL);
+/** 设备描述（扬声器、耳机） */
+static WCHAR device_name[25];
+
+/** 当切换扬声器时，重启插件，此时不能取消钩子 */
+static void install(boolean reload = false);
+static void uninstall(boolean reload = false);
 
 static void switchMute() {
     BOOL muted = FALSE;
@@ -83,10 +89,10 @@ static void setMsg(LPCWSTR msg) {
     WCHAR buf[1024] = { 0 };
     if (msg) {
         // 这里，为什么wsprintfW不支持%Ts，只能小写为%ts
-        wsprintfW(buf, L"扬声器（%ts）", msg);
+        wsprintfW(buf, L"%s（%ts）", device_name, msg);
         toast(buf);
     } else {
-        wsprintfW(buf, L"扬声器");
+        wsprintfW(buf, L"%s", device_name);
     }
     info.dwTypeData = buf;
     SetMenuItemInfoW(mainmenu, item, FALSE, &info);
@@ -185,10 +191,11 @@ public:
 };
 
 static IAudioEndpointVolumeCallback *event = NULL;
+static int init_mic_change_ev_listener();
 
-static void install()
+static void install(boolean reload)
 {
-    microphone = getVolume(0);
+    microphone = getVolume(0, device_name);
     if (!microphone) {
         printf("speaker 无法访问\n");
         return;
@@ -196,19 +203,69 @@ static void install()
     event = new CAudioEndpointVolumeCallback_vol();
     microphone->RegisterControlChangeNotify(event);
     updateMicStatusByIAudioEndpointVolume(microphone);
-    hhook = SetWindowsHookExW(
-        WH_KEYBOARD_LL,        // low-level keyboard input events
-        HookProcedure,         // pointer to the hook procedure
-        GetModuleHandle(NULL), // A handle to the DLL containing the hook procedure
-        NULL                   // desktop apps, if this parameter is zero
-    );
+    if (!reload) {
+        hhook = SetWindowsHookExW(
+            WH_KEYBOARD_LL,        // low-level keyboard input events
+            HookProcedure,         // pointer to the hook procedure
+            GetModuleHandle(NULL), // A handle to the DLL containing the hook procedure
+            NULL                   // desktop apps, if this parameter is zero
+        );
+        init_mic_change_ev_listener();
+    }
 }
 
-static void uninstall()
+/** 监听扬声器切换事件 */
+static class MyNotificationClient : public IMMNotificationClient {
+public:
+    HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged(EDataFlow flow, ERole role, LPCWSTR pwstrDeviceId) {
+        if (flow == eRender && role == eMultimedia) {
+            // printf("Default audio device changed: %ls\n", pwstrDeviceId);
+            uninstall(true);
+            install(true);
+        }
+        return S_OK;
+    }
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) { return E_NOTIMPL; }
+    ULONG STDMETHODCALLTYPE AddRef() { return 1; }
+    ULONG STDMETHODCALLTYPE Release() { return 1; }
+    HRESULT STDMETHODCALLTYPE OnDeviceStateChanged(LPCWSTR, DWORD) { return S_OK; }
+    HRESULT STDMETHODCALLTYPE OnDeviceAdded(LPCWSTR) { return S_OK; }
+    HRESULT STDMETHODCALLTYPE OnDeviceRemoved(LPCWSTR) { return S_OK; }
+    HRESULT STDMETHODCALLTYPE OnPropertyValueChanged(LPCWSTR, const PROPERTYKEY) { return S_OK; }
+};
+
+static MyNotificationClient *pClient = NULL;
+static IMMDeviceEnumerator* pEnumerator = NULL;
+
+static void uninstall(boolean reload)
 {
-    UnhookWindowsHookEx(hhook);
+    if (!reload) {
+        UnhookWindowsHookEx(hhook);
+        pEnumerator->UnregisterEndpointNotificationCallback(pClient);
+        pClient = NULL;
+    }
     microphone->UnregisterControlChangeNotify(event);
     setMsg(NULL);
+}
+
+static int init_mic_change_ev_listener() {
+    if (pClient) return 1;
+    HRESULT hr = CoInitialize(NULL);
+    if (FAILED(hr)) return 1;
+
+    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL,
+                          __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
+    if (FAILED(hr)) return 1;
+
+    pClient = new MyNotificationClient();
+    hr = pEnumerator->RegisterEndpointNotificationCallback(pClient);
+    if (FAILED(hr)) return 1;
+
+    pEnumerator->Release();
+    pClient->Release();
+    CoUninitialize();
+
+    return 0;
 }
 
 static void check() {
