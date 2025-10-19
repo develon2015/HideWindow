@@ -12,7 +12,7 @@ static IAudioEndpointVolume *microphone = NULL;
  * 1 麦克风
  * @see https://github.com/fcannizzaro/win-audio
  */
-IAudioEndpointVolume *getVolume(int mic, WCHAR *device_name = NULL);
+IAudioEndpointVolume *getVolume(int mic, LPWSTR device_name = nullptr, LPWSTR *device_id = nullptr);
 /** 设备描述（扬声器、耳机） */
 static WCHAR device_name[25];
 
@@ -44,6 +44,8 @@ static void setupVolume(float step) {
     }
 }
 
+int switchDevice();
+
 static LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	KBDLLHOOKSTRUCT *p = (KBDLLHOOKSTRUCT *)lParam;
@@ -54,6 +56,10 @@ static LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 		if (wParam == WM_SYSKEYDOWN || wParam == WM_KEYDOWN)
 		// if (wParam == WM_SYSKEYUP || wParam == WM_KEYUP)
 		{
+            if ((p->vkCode == VK_DECIMAL || p->vkCode == 'S') && (p->flags & 0b00100000)) { // ALT+S或.切换设备
+                switchDevice();
+                return TRUE;
+            }
             if (p->vkCode == 'M' && (p->flags & 0b00100000)) { // ALT+M快捷键静音
                 switchMute();
                 return TRUE;

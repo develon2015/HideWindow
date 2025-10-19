@@ -13,7 +13,7 @@ static IAudioEndpointVolume *microphone = NULL;
  * 1 麦克风
  * @see https://github.com/fcannizzaro/win-audio
  */
-IAudioEndpointVolume *getVolume(int mic, WCHAR *device_name = NULL)
+IAudioEndpointVolume *getVolume(int mic, LPWSTR device_name = nullptr, LPWSTR *device_id = nullptr)
 {
     HRESULT hr;
     IMMDeviceEnumerator *enumerator = NULL;
@@ -36,6 +36,11 @@ IAudioEndpointVolume *getVolume(int mic, WCHAR *device_name = NULL)
             pPropStore->GetValue(PKEY_Device_DeviceDesc, &varName);
             wsprintfW(device_name, L"%s", varName.pwszVal);
         }
+    }
+
+    // 获取设备ID
+    if (device_id) {
+        defaultDevice->GetId(device_id);
     }
 
     hr = defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (LPVOID *)&volume);
