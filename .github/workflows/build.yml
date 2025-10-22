@@ -1,0 +1,44 @@
+name: build
+
+on:
+  # 设置一个手动触发的Action
+  workflow_dispatch:
+  # 设置一个版本提交的Action
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  run:
+    strategy:
+      fail-fast: true
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Build
+        run: |
+          cmake -Bbuild
+          cmake --build build --config Release
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Artifacts-${{ github.sha }}
+          path: |
+            build/src/窗口隐藏器/Release/hide.exe
+          retention-days: 30
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: |
+            build/src/窗口隐藏器/Release/hide.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
